@@ -193,6 +193,89 @@ class Images(SyncAPIResource):
             ),
             cast_to=ImagesResponse,
         )
+    
+    def edit_dalle3(
+        self,
+        *,
+        image: FileTypes,
+        prompt: str,
+        mask: FileTypes | NotGiven = NOT_GIVEN,
+        model: Union[str, Literal["dall-e-2", "dall-e-3"], None] | NotGiven = NOT_GIVEN,
+        n: Optional[int] | NotGiven = NOT_GIVEN,
+        response_format: Optional[Literal["url", "b64_json"]] | NotGiven = NOT_GIVEN,
+        size: Optional[Literal["256x256", "512x512", "1024x1024"]] | NotGiven = NOT_GIVEN,
+        user: str | NotGiven = NOT_GIVEN,
+        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
+        # The extra values given here take precedence over values defined on the client or passed to this method.
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> ImagesResponse:
+        """
+        Creates an edited or extended image given an original image and a prompt.
+
+        Args:
+          image: The image to edit. Must be a valid PNG file, less than 4MB, and square. If mask
+              is not provided, image must have transparency, which will be used as the mask.
+
+          prompt: A text description of the desired image(s). The maximum length is 1000
+              characters.
+
+          mask: An additional image whose fully transparent areas (e.g. where alpha is zero)
+              indicate where `image` should be edited. Must be a valid PNG file, less than
+              4MB, and have the same dimensions as `image`.
+
+          model: The model to use for image generation. Only `dall-e-2` is supported at this
+              time.
+
+          n: The number of images to generate. Must be between 1 and 10.
+
+          response_format: The format in which the generated images are returned. Must be one of `url` or
+              `b64_json`. URLs are only valid for 60 minutes after the image has been
+              generated.
+
+          size: The size of the generated images. Must be one of `256x256`, `512x512`, or
+              `1024x1024`.
+
+          user: A unique identifier representing your end-user, which can help OpenAI to monitor
+              and detect abuse.
+              [Learn more](https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids).
+
+          extra_headers: Send extra headers
+
+          extra_query: Add additional query parameters to the request
+
+          extra_body: Add additional JSON properties to the request
+
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        body = deepcopy_minimal(
+            {
+                "image": image,
+                "prompt": prompt,
+                "mask": mask,
+                "model": model,
+                "n": n,
+                "response_format": response_format,
+                "size": size,
+                "user": user,
+            }
+        )
+        files = extract_files(cast(Mapping[str, object], body), paths=[["image"], ["mask"]])
+        if files:
+            # It should be noted that the actual Content-Type header that will be
+            # sent to the server will contain a `boundary` parameter, e.g.
+            # multipart/form-data; boundary=---abc--
+            extra_headers = {"Content-Type": "multipart/form-data", **(extra_headers or {})}
+
+        return self.create_variation(
+            model="dall-e-3",
+            image=image,
+            n=1,
+            size=size,
+            response_format=response_format
+        )
 
     def generate(
         self,

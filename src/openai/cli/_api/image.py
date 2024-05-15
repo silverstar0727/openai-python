@@ -137,3 +137,27 @@ class CLIImage:
             response_format=cast(Any, args.response_format),
         )
         print_model(image)
+
+    @staticmethod
+    def edit_dalle3(args: CLIImageEditArgs) -> None:
+        with open(args.image, "rb") as file_reader:
+            buffer_reader = BufferReader(file_reader.read(), desc="Image upload progress")
+
+        if isinstance(args.mask, NotGiven):
+            mask: NotGivenOr[BufferReader] = NOT_GIVEN
+        else:
+            with open(args.mask, "rb") as file_reader:
+                mask = BufferReader(file_reader.read(), desc="Mask progress")
+
+        image = get_client().images.edit_dalle3(
+            model=args.model,
+            prompt=args.prompt,
+            image=("image", buffer_reader),
+            n=args.num_images,
+            mask=("mask", mask) if not isinstance(mask, NotGiven) else mask,
+            # casts required because the API is typed for enums
+            # but we don't want to validate that here for forwards-compat
+            size=cast(Any, args.size),
+            response_format=cast(Any, args.response_format),
+        )
+        print_model(image)
